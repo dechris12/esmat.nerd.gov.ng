@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NERD Compliance Verification</title>
+    <style>
+        body { font-family: "Times New Roman", serif; background-color: #fff; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        #app { max-width: 600px; width: 100%; border-top: 5px solid #2e7d32; padding-top: 20px; }
+        .header { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .ndn { font-size: 14px; color: #555; margin-bottom: 15px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        .details p { margin: 10px 0; font-size: 15px; line-height: 1.4; }
+        .compliance { margin-top: 30px; font-size: 13px; }
+        .compliance-label { font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 10px; }
+        .status-badge { background-color: #2e7d32; color: white; padding: 2px 6px; font-weight: bold; margin-left: 10px; }
+        .error { text-align: center; margin-top: 50px; }
+        .loading { text-align: center; color: #999; margin-top: 50px; }
+        .docs { margin-top: 20px; color: #0000EE; text-decoration: underline; font-size: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="content" class="loading">Searching record...</div>
+</div>
+
+<script>
+    // 1. CONFIGURATION: PASTE YOUR SPREADSHEET ID HERE
+    const SHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; 
+    
+    // Get the ID from the URL (e.g., yoursite.com/?id=PRJ-123)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id');
+
+    async function verifyUser() {
+        const content = document.getElementById('content');
+
+        if (!userId) {
+            content.innerHTML = '<div class="error"><h2>❌ No ID Provided</h2><p>Please scan a valid QR code.</p></div>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`);
+            const text = await response.text();
+            const json = JSON.parse(text.substring(47).slice(0, -2));
+            const rows = json.table.rows;
+
+            // Find match in Column A (index 0)
+            const match = rows.find(r => r.c[0]?.v == userId);
+
+            if (match) {
+                // Mapping: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7
+                content.innerHTML = `
+                    <div class="header">NERD Compliance Verification</div>
+                    <div class="ndn">NDN: ${userId}</div>
+                    <hr>
+                    <div class="details">
+                        <p><strong>Title:</strong> ${match.c[1]?.v || 'N/A'}</p>
+                        <p><strong>Student name:</strong> ${match.c[2]?.v || 'N/A'}</p>
+                        <p><strong>Institution:</strong> ${match.c[3]?.v || 'N/A'}</p>
+                        <p><strong>Faculty:</strong> ${match.c[4]?.v || 'N/A'}</p>
+                        <p><strong>Department:</strong> ${match.c[5]?.v || 'N/A'}</p>
+                        <p><strong>Submission Type:</strong> ${match.c[6]?.v || 'N/A'}</p>
+                        <p><strong>Date of Submission:</strong> ${match.c[7]?.v || 'N/A'}</p>
+                    </div>
+                    <div class="compliance">
+                        <span class="compliance-label">Compliance</span>
+                        <ul style="list-style: disc; padding-left: 20px;">
+                            <li>NCVS Compliance: <i>Not enforced</i></li>
+                            <li style="margin-top:10px;">Academic report submission: <span class="status-badge">Complied</span></li>
+                        </ul>
+                    </div>
+                    <div class="docs">
+                        <p><strong>Documents:</strong></p>
+                        <p>• Original Upload</p>
+                        <p>• System Generated PDF</p>
+                    </div>
+                `;
+                content.className = ""; // Remove loading style
+            } else {
+                content.innerHTML = `<div class="error"><h2>❌ Verification Failed</h2><p>Record ${userId} not found in our database.</p></div>`;
+            }
+        } catch (e) {
+            content.innerHTML = '<div class="error"><h2>⚠️ Connection Error</h2><p>Could not reach the database. Check your internet.</p></div>';
+        }
+    }
+
+    verifyUser();
+</script>
+
+</body>
+</html>
