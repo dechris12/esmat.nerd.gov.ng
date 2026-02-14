@@ -5,18 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NERD Compliance Verification</title>
     <style>
-        body { font-family: "Times New Roman", serif; background-color: #fff; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        #app { max-width: 600px; width: 100%; border-top: 5px solid #2e7d32; padding-top: 20px; }
-        .header { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
-        .ndn { font-size: 14px; color: #555; margin-bottom: 15px; }
-        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-        .details p { margin: 10px 0; font-size: 15px; line-height: 1.4; }
-        .compliance { margin-top: 30px; font-size: 13px; }
-        .compliance-label { font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 10px; }
-        .status-badge { background-color: #2e7d32; color: white; padding: 2px 6px; font-weight: bold; margin-left: 10px; }
-        .error { text-align: center; margin-top: 50px; }
+        body { font-family: "Times New Roman", serif; background-color: #fff; color: #000; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        #app { max-width: 800px; width: 100%; }
+        
+        .header { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .ndn { font-size: 15px; margin-bottom: 10px; }
+        hr { border: 0; border-top: 1px solid #ccc; margin: 10px 0; }
+        
+        .details p { margin: 2px 0; font-size: 15px; line-height: 1.2; }
+        .details strong { font-weight: bold; }
+        
+        /* Compliance Section */
+        .compliance { margin-top: 20px; }
+        .compliance-label { 
+            font-size: 10px; /* Reduced size as requested */
+            font-weight: bold; 
+            display: block; 
+            margin-bottom: 15px; 
+        }
+        .compliance ul { 
+            list-style: disc; 
+            padding-left: 30px; /* 10px base + standard bullet padding */
+            margin: 0;
+        }
+        .compliance li { font-size: 15px; margin-bottom: 2px; }
+        .status-badge { background-color: #2e7d32; color: white; padding: 0px 4px; font-weight: normal; }
+
+        /* Documents Section */
+        .docs { margin-top: 20px; }
+        .docs-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #000; }
+        .docs ul { list-style: disc; padding-left: 30px; margin: 0; }
+        .docs li { margin-bottom: 0px; line-height: 1.1; } /* Reduced spacing */
+        .docs a { color: #0000EE; text-decoration: underline; font-size: 15px; }
+
+        .error { text-align: center; margin-top: 50px; font-family: Arial, sans-serif; }
         .loading { text-align: center; color: #999; margin-top: 50px; }
-        .docs { margin-top: 20px; color: #0000EE; text-decoration: underline; font-size: 14px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -29,7 +52,6 @@
     // 1. CONFIGURATION: PASTE YOUR SPREADSHEET ID HERE
     const SHEET_ID = '1RBpClxl8hIRW3Y0PJdClYRebtGlYu_yJE7IWGVU_7to'; 
     
-    // Get the ID from the URL (e.g., yoursite.com/?id=PRJ-123)
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
@@ -47,43 +69,48 @@
             const json = JSON.parse(text.substring(47).slice(0, -2));
             const rows = json.table.rows;
 
-            // Find match in Column A (index 0)
             const match = rows.find(r => r.c[0]?.v == userId);
 
             if (match) {
-                // Mapping: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7
+                // Ensure Department is Upper Case
+                const dept = (match.c[5]?.v || 'N/A').toUpperCase();
+
                 content.innerHTML = `
                     <div class="header">NERD Compliance Verification</div>
-                    <div class="ndn">NDN: ${userId}</div>
+                    <div class="ndn"><strong>NDN:</strong> ${userId}</div>
                     <hr>
                     <div class="details">
                         <p><strong>Title:</strong> ${match.c[1]?.v || 'N/A'}</p>
                         <p><strong>Student name:</strong> ${match.c[2]?.v || 'N/A'}</p>
                         <p><strong>Institution:</strong> ${match.c[3]?.v || 'N/A'}</p>
                         <p><strong>Faculty:</strong> ${match.c[4]?.v || 'N/A'}</p>
-                        <p><strong>Department:</strong> ${match.c[5]?.v || 'N/A'}</p>
+                        <p><strong>Department:</strong> ${dept}</p>
                         <p><strong>Submission Type:</strong> ${match.c[6]?.v || 'N/A'}</p>
                         <p><strong>Date of Submission:</strong> ${match.c[7]?.v || 'N/A'}</p>
                     </div>
+                    
                     <div class="compliance">
                         <span class="compliance-label">Compliance</span>
-                        <ul style="list-style: disc; padding-left: 20px;">
+                        <ul>
                             <li>NCVS Compliance: <i>Not enforced</i></li>
-                            <li style="margin-top:10px;">Academic report submission: <span class="status-badge">Complied</span></li>
+                            <li>Academic report submission: <span class="status-badge">Complied</span></li>
                         </ul>
                     </div>
+
                     <div class="docs">
-                        <p><strong>Documents:</strong></p>
-                        <p>• Original Upload</p>
-                        <p>• System Generated PDF</p>
+                        <div class="docs-title">Documents:</div>
+                        <ul>
+                            <li><a href="#">Original Upload</a></li>
+                            <li><a href="#">System Generated PDF</a></li>
+                        </ul>
                     </div>
                 `;
-                content.className = ""; // Remove loading style
+                content.className = ""; 
             } else {
                 content.innerHTML = `<div class="error"><h2>❌ Verification Failed</h2><p>Record ${userId} not found in our database.</p></div>`;
             }
         } catch (e) {
-            content.innerHTML = '<div class="error"><h2>⚠️ Connection Error</h2><p>Could not reach the database. Check your internet.</p></div>';
+            content.innerHTML = '<div class="error"><h2>⚠️ Connection Error</h2><p>Could not reach the database.</p></div>';
         }
     }
 
