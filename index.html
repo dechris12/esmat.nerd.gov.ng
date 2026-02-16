@@ -8,9 +8,8 @@
         body { font-family: "Times New Roman", serif; background-color: #fff; color: #000; margin: 0; padding: 20px; display: flex; justify-content: center; }
         #app { max-width: 800px; width: 100%; }
         
-        /* Added margin-bottom to create space between Title and NDN */
-        .header { font-weight: bold; font-size: 16px; margin-bottom: 20px; }
-        .ndn { font-size: 15px; margin-bottom: 10px; }
+        .header { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .ndn { font-size: 15px; margin-bottom: 10px; margin-top: 15px; } /* Added margin-top for space */
         hr { border: 0; border-top: 1px solid #ccc; margin: 10px 0; }
         
         .details p { margin: 2px 0; font-size: 15px; line-height: 1.2; }
@@ -30,8 +29,8 @@
             margin: 0;
         }
         .compliance li { font-size: 15px; margin-bottom: 2px; }
-        /* Changed color to black as requested */
-        .status-badge { background-color: #2e7d32; color: black; padding: 0px 4px; font-weight: normal; }
+        /* Changed color to black */
+        .status-badge { background-color: #2e7d32; color: #000; padding: 0px 4px; font-weight: normal; }
 
         /* Documents Section */
         .docs { margin-top: 20px; }
@@ -56,21 +55,25 @@
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
-    // Helper to convert text to Initials (Title Case)
-    function toInitials(str) {
+    // Helper for Title Case (Initials)
+    function toTitleCase(str) {
         if (!str) return 'N/A';
-        return str.toString().toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+        return str.toString().toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     }
 
-    // Helper to format Date/Time to YYYY-MM-DD HH:mm:ss
-    function formatDateTime(val) {
-        if (!val) return 'N/A';
-        // Remove any existing slashes or commas and normalize to standard date string
-        const d = new Date(val.toString().replace(/[/,]/g, '-'));
-        if (isNaN(d.getTime())) return val; // Fallback if date is invalid
-
-        const pad = (n) => n.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    // Helper to format Google Sheets Date string
+    function formatDate(dateStr) {
+        if (!dateStr || !dateStr.includes('Date')) return dateStr;
+        const vals = dateStr.match(/\d+/g);
+        if (!vals) return dateStr;
+        // Month is 0-indexed in JS Date, but match raw values for display
+        const y = vals[0];
+        const m = (parseInt(vals[1]) + 1).toString().padStart(2, '0');
+        const d = vals[2].padStart(2, '0');
+        const hh = vals[3].padStart(2, '0');
+        const mm = vals[4].padStart(2, '0');
+        const ss = vals[5].padStart(2, '0');
+        return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
     }
 
     async function verifyUser() {
@@ -90,31 +93,27 @@
             const match = rows.find(r => r.c[0]?.v == userId);
 
             if (match) {
-                // Topic (match.c[1]) -> Bold and Caps
-                const topic = (match.c[1]?.v || 'N/A').toUpperCase();
-                
-                // Everything else -> Initials
-                const studentName = toInitials(match.c[2]?.v);
-                const institution = toInitials(match.c[3]?.v);
-                const faculty = toInitials(match.c[4]?.v);
-                const dept = toInitials(match.c[5]?.v);
-                const subType = toInitials(match.c[6]?.v);
-                
-                // Date formatting
-                const dateSub = formatDateTime(match.c[7]?.v);
+                // Formatting data according to requirements
+                const title = (match.c[1]?.v || 'N/A').toUpperCase(); // Bold & Caps via HTML/JS
+                const studentName = toTitleCase(match.c[2]?.v);
+                const institution = toTitleCase(match.c[3]?.v);
+                const faculty = toTitleCase(match.c[4]?.v);
+                const department = toTitleCase(match.c[5]?.v);
+                const submissionType = toTitleCase(match.c[6]?.v);
+                const formattedDate = formatDate(match.c[7]?.f || match.c[7]?.v || 'N/A');
 
                 content.innerHTML = `
                     <div class="header">NERD Compliance Verification</div>
                     <div class="ndn"><strong>NDN:</strong> ${userId}</div>
                     <hr>
                     <div class="details">
-                        <p><strong>Title:</strong> <strong>${topic}</strong></p>
+                        <p><strong>Title:</strong> <strong>${title}</strong></p>
                         <p><strong>Student name:</strong> ${studentName}</p>
                         <p><strong>Institution:</strong> ${institution}</p>
                         <p><strong>Faculty:</strong> ${faculty}</p>
-                        <p><strong>Department:</strong> ${dept}</p>
-                        <p><strong>Submission Type:</strong> ${subType}</p>
-                        <p><strong>Date of Submission:</strong> ${dateSub}</p>
+                        <p><strong>Department:</strong> ${department}</p>
+                        <p><strong>Submission Type:</strong> ${submissionType}</p>
+                        <p><strong>Date of Submission:</strong> ${formattedDate}</p>
                     </div>
                     
                     <div class="compliance">
