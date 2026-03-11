@@ -18,26 +18,25 @@
         /* Compliance Section */
         .compliance { margin-top: 20px; }
         .compliance-label { 
-            font-size: 10px; /* Reduced size as requested */
+            font-size: 10px; 
             font-weight: bold; 
             display: block; 
             margin-bottom: 15px; 
         }
         .compliance ul { 
             list-style: disc; 
-            padding-left: 30px; /* 10px base + standard bullet padding */
+            padding-left: 30px; 
             margin: 0;
         }
         .compliance li { font-size: 15px; margin-bottom: 2px; }
-        /* Fix: Text color set to black as requested */
         .status-badge { background-color: #2e7d32; color: black; padding: 0px 4px; font-weight: normal; }
 
         /* Documents Section */
         .docs { margin-top: 20px; }
         .docs-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #000; }
         .docs ul { list-style: disc; padding-left: 30px; margin: 0; }
-        .docs li { margin-bottom: 0px; line-height: 1.1; } /* Reduced spacing */
-        .docs a { color: #0000EE; text-decoration: underline; font-size: 15px; }
+        .docs li { margin-bottom: 0px; line-height: 1.1; } 
+        .docs a { color: #0000EE; text-decoration: underline; font-size: 15px; cursor: pointer; }
 
         .error { text-align: center; margin-top: 50px; font-family: Arial, sans-serif; }
         .loading { text-align: center; color: #999; margin-top: 50px; }
@@ -50,16 +49,37 @@
 </div>
 
 <script>
-    // 1. CONFIGURATION: PASTE YOUR SPREADSHEET ID HERE
+    // 1. CONFIGURATION
     const SHEET_ID = '1RBpClxl8hIRW3Y0PJdClYRebtGlYu_yJE7IWGVU_7to'; 
     
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
-    // Helper function to capitalize the first letter of every word
     function toInitialCase(str) {
         if (!str) return 'N/A';
         return str.toString().toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    // Function to open System Generated Text in a clean window
+    function viewSystemGenerated(text, title) {
+        const win = window.open("", "_blank");
+        win.document.write(`
+            <html>
+            <head>
+                <title>System Generated - ${title}</title>
+                <style>
+                    body { font-family: "Times New Roman", serif; padding: 40px; line-height: 1.6; color: #333; max-width: 800px; margin: auto; }
+                    .header { border-bottom: 2px solid #2e7d32; color: #2e7d32; font-weight: bold; margin-bottom: 20px; padding-bottom: 10px; }
+                    pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">NERD SYSTEM GENERATED VIEW: ${title}</div>
+                <pre>${text}</pre>
+            </body>
+            </html>
+        `);
+        win.document.close();
     }
 
     async function verifyUser() {
@@ -79,16 +99,20 @@
             const match = rows.find(r => r.c[0]?.v == userId);
 
             if (match) {
-                // Get raw value from Sheet for Date (f is formatted value)
                 const rawDate = match.c[7]?.f || match.c[7]?.v || 'N/A';
                 
-                // Process fields
                 const title = (match.c[1]?.v || 'N/A').toUpperCase();
                 const studentName = toInitialCase(match.c[2]?.v);
                 const institution = toInitialCase(match.c[3]?.v);
                 const faculty = toInitialCase(match.c[4]?.v);
                 const department = toInitialCase(match.c[5]?.v);
                 const subType = toInitialCase(match.c[6]?.v);
+                
+                // New Data Columns
+                const fileId = match.c[8]?.v || null;
+                const extractedText = match.c[9]?.v || "No text available for this record.";
+
+                const driveLink = fileId ? `https://drive.google.com/uc?id=${fileId}&export=view` : "#";
 
                 content.innerHTML = `
                     <div class="header">NERD Compliance Verification</div>
@@ -115,8 +139,8 @@
                     <div class="docs">
                         <div class="docs-title">Documents:</div>
                         <ul>
-                            <li><a href="#">Original Upload</a></li>
-                            <li><a href="#">System Generated PDF</a></li>
+                            <li><a href="${driveLink}" target="_blank">${fileId ? 'Original Upload' : 'Original Upload (Not Found)'}</a></li>
+                            <li><a onclick="viewSystemGenerated(\`${extractedText.replace(/`/g, '\\`')}\`, '${title}')">System Generated PDF</a></li>
                         </ul>
                     </div>
                 `;
