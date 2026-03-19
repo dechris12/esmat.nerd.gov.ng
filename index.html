@@ -7,14 +7,14 @@
     <style>
         body { font-family: "Times New Roman", serif; background-color: #fff; color: #000; margin: 0; padding: 20px; display: flex; justify-content: center; }
         #app { max-width: 800px; width: 100%; }
-
+        
         .header { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
         .ndn { font-size: 15px; margin-bottom: 10px; }
         hr { border: 0; border-top: 1px solid #ccc; margin: 10px 0; }
-
+        
         .details p { margin: 2px 0; font-size: 15px; line-height: 1.2; }
         .details strong { font-weight: bold; }
-
+        
         /* Compliance Section */
         .compliance { margin-top: 20px; }
         .compliance-label { 
@@ -41,7 +41,6 @@
         .error { text-align: center; margin-top: 50px; font-family: Arial, sans-serif; }
         .loading { text-align: center; color: #999; margin-top: 50px; }
     </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -52,7 +51,7 @@
 <script>
     // 1. CONFIGURATION
     const SHEET_ID = '1RBpClxl8hIRW3Y0PJdClYRebtGlYu_yJE7IWGVU_7to'; 
-
+    
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
@@ -64,28 +63,26 @@
         ).join(' ');
     }
 
-    // Function to format and display the extracted text in a new window
-    // Formats CHAPTERS in bold and displays as readable article
+    // Function to open System Generated Text in new window with CHAPTERS bold
     function viewSystemGenerated(text, title) {
         const win = window.open("", "_blank");
-
-        // Check if text indicates a failure or is empty
+        
+        // Check if text indicates a failure or is empty/invalid
         const isError = !text || 
                        text === "No text available for this record." ||
                        text.toLowerCase().includes("failed") || 
                        text.toLowerCase().includes("not a pdf") ||
                        text.toLowerCase().includes("no text") ||
-                       text.toLowerCase().includes("requires");
-
+                       text.toLowerCase().includes("requires") ||
+                       text.toLowerCase().includes("error") ||
+                       text.toLowerCase().includes("upload_failed");
+        
         if (isError) {
             // Show error page for missing/invalid text
-            const displayHeader = "Error 404 - Not Found";
-            const displayText = "The document you are looking for may have been removed or re-named. Please contact the web site owner for further assistance.";
-
             win.document.write(`
                 <html>
                 <head>
-                    <title>${displayHeader}</title>
+                    <title>Error 404 - Not Found</title>
                     <style>
                         body { font-family: "Times New Roman", serif; padding: 40px; line-height: 1.6; color: #000; max-width: 800px; margin: auto; }
                         .header { font-size: 28px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
@@ -93,28 +90,25 @@
                     </style>
                 </head>
                 <body>
-                    <div class="header">${displayHeader}</div>
-                    <div class="error-text">${displayText}</div>
+                    <div class="header">Error 404 - Not Found</div>
+                    <div class="error-text">The document you are looking for may have been removed or re-named. Please contact the web site owner for further assistance.</div>
                 </body>
                 </html>
             `);
         } else {
             // Format the text: Make CHAPTERS bold and structure as article
-            // Split by "CHAPTER" and reconstruct with bold formatting
             let formattedText = text
                 .replace(/CHAPTER\s+(\d+[A-Z]*)/gi, '<strong>CHAPTER $1</strong>')
                 .replace(/CHAPTER\s+([A-Z]+)/gi, '<strong>CHAPTER $1</strong>');
-
+            
             // Replace newlines with paragraph breaks for better readability
             formattedText = formattedText
-                .split('
-
-')
-                .map(para => para.trim())
-                .filter(para => para.length > 0)
-                .map(para => `<p>${para}</p>`)
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => `<p>${line}</p>`)
                 .join('');
-
+            
             win.document.write(`
                 <html>
                 <head>
@@ -142,6 +136,7 @@
                             text-align: justify;
                             word-wrap: break-word;
                             overflow-wrap: break-word;
+                            hyphens: auto;
                         }
                         .content p {
                             margin-bottom: 1em;
@@ -184,17 +179,17 @@
 
             if (match) {
                 const rawDate = match.c[7]?.f || match.c[7]?.v || 'N/A';
-
+                
                 // FORCE CAPS for Title
                 const title = (match.c[1]?.v || 'N/A').toUpperCase();
-
+                
                 // FORCE Initial Case for all others
                 const studentName = toInitialCase(match.c[2]?.v);
                 const institution = toInitialCase(match.c[3]?.v);
                 const faculty = toInitialCase(match.c[4]?.v);
                 const department = toInitialCase(match.c[5]?.v);
                 const subType = toInitialCase(match.c[6]?.v);
-
+                
                 // New Data Columns
                 const fileId = match.c[8]?.v || null;
                 const extractedText = match.c[9]?.v || "No text available for this record.";
@@ -214,7 +209,7 @@
                         <p><strong>Submission Type:</strong> ${subType}</p>
                         <p><strong>Date of Submission:</strong> ${rawDate}</p>
                     </div>
-
+                    
                     <div class="compliance">
                         <span class="compliance-label">Compliance</span>
                         <ul>
@@ -227,7 +222,7 @@
                         <div class="docs-title">Documents:</div>
                         <ul>
                             <li><a href="${driveLink}" target="_blank">${fileId ? 'Original Upload' : 'Original Upload (Not Found)'}</a></li>
-                            <li><a onclick="viewSystemGenerated(\`${extractedText.replace(/`/g, '\`')}\`, '${title.replace(/'/g, "\'")}')">System Generated PDF</a></li>
+                            <li><a onclick="viewSystemGenerated(\`${extractedText.replace(/`/g, '\\`')}\`, \`${title.replace(/`/g, '\\`')}\`)">System Generated PDF</a></li>
                         </ul>
                     </div>
                 `;
