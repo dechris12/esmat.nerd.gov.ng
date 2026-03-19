@@ -55,6 +55,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
+    // Store extracted text globally to avoid HTML attribute escaping issues
+    let storedExtractedText = "";
+    let storedTitle = "";
+
     // Enhanced Initial Case formatting (Initializes every word)
     function toInitialCase(str) {
         if (!str) return 'N/A';
@@ -64,7 +68,9 @@
     }
 
     // Function to open System Generated Text in new window with CHAPTERS bold
-    function viewSystemGenerated(text, title) {
+    function viewSystemGenerated() {
+        const text = storedExtractedText;
+        const title = storedTitle;
         const win = window.open("", "_blank");
         
         // Check if text indicates a failure or is empty/invalid
@@ -194,6 +200,10 @@
                 const fileId = match.c[8]?.v || null;
                 const extractedText = match.c[9]?.v || "No text available for this record.";
 
+                // Store in global variables to avoid HTML escaping issues
+                storedExtractedText = extractedText;
+                storedTitle = title;
+
                 const driveLink = fileId ? `https://drive.google.com/uc?id=${fileId}&export=view` : "#";
 
                 content.innerHTML = `
@@ -222,7 +232,7 @@
                         <div class="docs-title">Documents:</div>
                         <ul>
                             <li><a href="${driveLink}" target="_blank">${fileId ? 'Original Upload' : 'Original Upload (Not Found)'}</a></li>
-                            <li><a onclick="viewSystemGenerated(\`${extractedText.replace(/`/g, '\\`')}\`, \`${title.replace(/`/g, '\\`')}\`)">System Generated PDF</a></li>
+                            <li><a onclick="viewSystemGenerated()">System Generated PDF</a></li>
                         </ul>
                     </div>
                 `;
