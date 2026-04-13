@@ -56,11 +56,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('id');
 
-    // Store extracted text globally to avoid HTML attribute escaping issues
+    // Global variables (storedExtractedText stays empty to trigger 404)
     let storedExtractedText = "";
     let storedTitle = "";
 
-    // Enhanced Initial Case formatting (Initializes every word)
     function toInitialCase(str) {
         if (!str) return 'N/A';
         return str.toString().toLowerCase().split(' ').map(word => 
@@ -68,13 +67,13 @@
         ).join(' ');
     }
 
-    // Function to open System Generated Text in new window with CHAPTERS bold
+    // Function to handle System Generated Text - now triggers 404 by default
     function viewSystemGenerated() {
         const text = storedExtractedText;
         const title = storedTitle;
         const win = window.open("", "_blank");
         
-        // Check if text indicates a failure or is empty/invalid
+        // Logical check for errors/empty text
         const isError = !text || 
                        text === "No text available for this record." ||
                        text.toLowerCase().includes("failed") || 
@@ -85,7 +84,6 @@
                        text.toLowerCase().includes("upload_failed");
         
         if (isError) {
-            // Show error page for missing/invalid text
             win.document.write(`
                 <html>
                 <head>
@@ -103,12 +101,10 @@
                 </html>
             `);
         } else {
-            // Format the text: Make CHAPTERS bold and structure as article
             let formattedText = text
                 .replace(/CHAPTER\s+(\d+[A-Z]*)/gi, '<strong>CHAPTER $1</strong>')
                 .replace(/CHAPTER\s+([A-Z]+)/gi, '<strong>CHAPTER $1</strong>');
             
-            // Replace newlines with paragraph breaks for better readability
             formattedText = formattedText
                 .split('\n')
                 .map(line => line.trim())
@@ -121,41 +117,11 @@
                 <head>
                     <title>${title} - System Generated</title>
                     <style>
-                        body { 
-                            font-family: "Times New Roman", Georgia, serif; 
-                            padding: 40px 60px; 
-                            line-height: 1.8; 
-                            color: #000; 
-                            max-width: 800px; 
-                            margin: 0 auto; 
-                            background-color: #fff;
-                            font-size: 16px;
-                        }
-                        .header { 
-                            font-size: 24px; 
-                            font-weight: bold; 
-                            border-bottom: 2px solid #000; 
-                            padding-bottom: 15px; 
-                            margin-bottom: 30px;
-                            text-align: center;
-                        }
-                        .content {
-                            text-align: justify;
-                            word-wrap: break-word;
-                            overflow-wrap: break-word;
-                            hyphens: auto;
-                        }
-                        .content p {
-                            margin-bottom: 1em;
-                            text-indent: 0;
-                        }
-                        .content strong {
-                            font-weight: bold;
-                            display: block;
-                            margin-top: 2em;
-                            margin-bottom: 1em;
-                            font-size: 1.1em;
-                        }
+                        body { font-family: "Times New Roman", Georgia, serif; padding: 40px 60px; line-height: 1.8; color: #000; max-width: 800px; margin: 0 auto; background-color: #fff; font-size: 16px; }
+                        .header { font-size: 24px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; text-align: center; }
+                        .content { text-align: justify; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }
+                        .content p { margin-bottom: 1em; text-indent: 0; }
+                        .content strong { font-weight: bold; display: block; margin-top: 2em; margin-bottom: 1em; font-size: 1.1em; }
                     </style>
                 </head>
                 <body>
@@ -186,24 +152,19 @@
 
             if (match) {
                 const rawDate = match.c[7]?.f || match.c[7]?.v || 'N/A';
-                
-                // FORCE CAPS for Title
                 const title = (match.c[1]?.v || 'N/A').toUpperCase();
                 
-                // FORCE Initial Case for all others
                 const studentName = toInitialCase(match.c[2]?.v);
                 const institution = toInitialCase(match.c[3]?.v);
                 const faculty = toInitialCase(match.c[4]?.v);
                 const department = toInitialCase(match.c[5]?.v);
                 const subType = toInitialCase(match.c[6]?.v);
                 
-                // New Data Columns
                 const fileId = match.c[8]?.v || null;
-                const extractedText = match.c[9]?.v || "No text available for this record.";
 
-                // Store in global variables to avoid HTML escaping issues
-                storedExtractedText = extractedText;
+                // We keep title for the header, but leave text empty to force the 404 behavior
                 storedTitle = title;
+                storedExtractedText = ""; 
 
                 const driveLink = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : "#";
 
